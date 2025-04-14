@@ -1,4 +1,4 @@
-// index.js
+// index.js – pełna wersja z layoutem, tłem, logo i wszystkimi funkcjami
 'use client'
 
 import { useState, useEffect } from "react";
@@ -31,25 +31,21 @@ export default function Home() {
 
   const connectWallet = async () => {
     try {
-      if (typeof window.ethereum === "undefined") {
-        alert("🦊 Zainstaluj MetaMask, aby połączyć portfel.");
-        return;
-      }
-
+      if (!window.ethereum) return alert("🦊 Zainstaluj MetaMask.");
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await provider.send("eth_requestAccounts", []);
+      await provider.send("eth_requestAccounts", []);
       const signer = await provider.getSigner();
       const address = await signer.getAddress();
-
       setWalletAddress(address);
       const alcoinContract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
       setContract(alcoinContract);
-
       const owner = await alcoinContract.owner();
       setContractOwner(owner);
+      const balance = await alcoinContract.balanceOf(address);
+      setAlcBalance(ethers.formatUnits(balance, 18));
     } catch (err) {
-      console.error("❌ Błąd łączenia:", err);
-      alert("❌ Nie udało się połączyć z portfelem.");
+      console.error(err);
+      alert("Nie udało się połączyć z portfelem.");
     }
   };
 
@@ -75,20 +71,14 @@ export default function Home() {
   };
 
   const buyTokens = async () => {
-    if (!walletAddress || !contract) {
-      alert("Połącz portfel najpierw.");
-      return;
-    }
-
+    if (!walletAddress || !contract) return alert("Połącz portfel najpierw.");
     try {
       const amountBN = ethers.parseUnits(amount, 18);
       const tokenPrice = await contract.getTokenPriceInETH();
       const discountedPrice = tokenPrice * 85n / 100n;
       const totalCost = (amountBN * discountedPrice) / ethers.parseUnits("1", 18);
-
       const tx = await contract.buyTokens(amountBN, { value: totalCost });
       await tx.wait();
-
       alert("✅ Zakup zakończony sukcesem!");
       setAmount("10000");
       fetchBalance();
@@ -108,7 +98,6 @@ export default function Home() {
         const interval = SECONDS_IN_YEAR;
         const remaining = Math.max(interval - (now - lastTime), 0);
         setDaysLeft(Math.ceil(remaining / (24 * 3600)));
-
         const rawBalance = await contract.investorBalance(walletAddress);
         const balance = ethers.formatUnits(rawBalance, 18);
         const estimatedDividend = (parseFloat(balance) * 10) / 100;
@@ -165,7 +154,6 @@ export default function Home() {
       setAdminMessage("❌ Nieprawidłowy adres.");
       return;
     }
-
     try {
       const tx = await contract.addToWhitelist(newInvestor);
       await tx.wait();
@@ -208,12 +196,10 @@ export default function Home() {
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     connectWallet();
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchBalance();
     fetchCost();
@@ -222,53 +208,70 @@ export default function Home() {
   }, [contract, walletAddress, amount]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-yellow-100 to-yellow-300">
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6">
-        <h1 className="text-2xl font-bold mb-4">💎 ALcoin - Panel</h1>
-        <p className="mb-2">Twój adres: <span className="font-mono text-blue-700">{walletAddress || '(niepołączony)'}</span></p>
-        <p className="mb-4">Saldo ALcoin: <strong>{alcBalance}</strong> ALC</p>
-
-        {walletAddress === contractOwner && (
-          <div className="mt-6 border-t pt-6">
-            <h2 className="text-xl font-semibold mb-2">🎁 Wyślij ALcoin</h2>
-
-            <input
-              type="text"
-              placeholder="Adres odbiorcy"
-              value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
-              className="w-full mb-2 p-2 border rounded"
+    <div
+      className="min-h-screen bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/alcoin-bg.webp')" }}
+    >
+      <div className="min-h-screen backdrop-blur-md bg-black/60 flex flex-col items-center justify-between p-4 text-white">
+        <div className="w-full max-w-6xl bg-white/10 rounded-2xl shadow-xl p-4 sm:p-6 md:p-8">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1 }}
+            className="flex justify-center mb-6"
+          >
+            <img
+              src="/logo-alcoin.png"
+              alt="ALcoin Logo"
+              className="h-20 sm:h-24 md:h-[130px] w-auto drop-shadow-xl"
             />
+          </motion.div>
 
-            <input
-              type="number"
-              placeholder="Ilość ALC"
-              value={transferAmount}
-              onChange={(e) => setTransferAmount(e.target.value)}
-              className="w-full mb-2 p-2 border rounded"
-            />
+          <p className="mb-2">Twój adres: <span className="font-mono text-blue-400">{walletAddress || "(niepołączony)"}</span></p>
+          <p className="mb-4">Saldo: <strong>{alcBalance}</strong> ALC</p>
 
-            <button
-              onClick={transferTokens}
-              className="w-full bg-yellow-500 text-black font-bold py-2 rounded hover:bg-yellow-600"
-            >
-              Wyślij ALcoin
-            </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h2 className="text-xl font-semibold">💰 Zakup Tokenów</h2>
+              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full p-2 border rounded text-black" />
+              <p>Koszt: <strong>{cost}</strong> ETH</p>
+              <button onClick={buyTokens} className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600">Kup Tokeny</button>
+              <h2 className="text-xl font-semibold mt-6">🔥 BuyBack</h2>
+              <button onClick={buyBack} className="w-full bg-indigo-500 text-white py-2 rounded hover:bg-indigo-600">Sprzedaj tokeny</button>
+            </div>
 
-            {transferMessage && <p className="mt-2 text-sm text-gray-800">{transferMessage}</p>}
-
-            {recipientBalance && (
-              <p className="mt-2 text-sm text-green-700">
-                Saldo odbiorcy po transferze: <strong>{recipientBalance}</strong> ALC
-              </p>
-            )}
+            <div>
+              <h2 className="text-xl font-semibold">📦 Staking</h2>
+              <input type="number" value={stakingAmount} onChange={(e) => setStakingAmount(e.target.value)} className="w-full p-2 border rounded text-black" />
+              <button onClick={stake} className="w-full bg-yellow-500 text-black py-2 rounded hover:bg-yellow-600">Stake</button>
+              <button onClick={unstake} className="w-full mt-2 bg-red-500 text-white py-2 rounded hover:bg-red-600">Unstake</button>
+              <h2 className="text-xl font-semibold mt-6">📈 Dywidendy</h2>
+              <p>Szacunkowa: {dividend} ALC</p>
+              <p>Dni do wypłaty: {daysLeft}</p>
+              <button onClick={claimDividend} className="w-full bg-purple-500 text-white py-2 rounded hover:bg-purple-600">Wypłać</button>
+            </div>
           </div>
-        )}
 
-        <footer className="mt-6 text-center text-xs text-gray-500">
-          © {new Date().getFullYear()} ALcoin – Wszelkie prawa zastrzeżone. <br />
-          Inwestycje w kryptowaluty wiążą się z ryzykiem. Przed podjęciem decyzji zapoznaj się z <a className="text-blue-600 underline" href="https://alsolution.pl/produkty-1/token-alcoin" target="_blank">dokumentacją kontraktu</a>.
-        </footer>
+          {walletAddress === contractOwner && (
+            <div className="mt-10 border-t pt-6">
+              <h2 className="text-xl font-semibold">🛡️ Panel Admina</h2>
+              <input type="text" placeholder="Adres inwestora" value={newInvestor} onChange={(e) => setNewInvestor(e.target.value)} className="w-full p-2 border rounded text-black" />
+              <button onClick={addToWhitelist} className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Dodaj do whitelisty</button>
+              {adminMessage && <p>{adminMessage}</p>}
+              <h2 className="text-xl font-semibold mt-6">🎁 Wyślij ALcoin</h2>
+              <input type="text" placeholder="Adres odbiorcy" value={recipient} onChange={(e) => setRecipient(e.target.value)} className="w-full p-2 border rounded text-black" />
+              <input type="number" placeholder="Ilość ALC" value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} className="w-full p-2 border rounded text-black" />
+              <button onClick={transferTokens} className="w-full bg-yellow-500 text-black py-2 rounded hover:bg-yellow-600">Wyślij ALcoin</button>
+              {transferMessage && <p className="text-sm text-white mt-2">{transferMessage}</p>}
+              {recipientBalance && <p className="text-sm text-green-300">Saldo odbiorcy: {recipientBalance} ALC</p>}
+            </div>
+          )}
+
+          <footer className="mt-10 text-center text-xs text-white/80">
+            © {new Date().getFullYear()} ALcoin – Wszelkie prawa zastrzeżone. <br />
+            Inwestycje w kryptowaluty wiążą się z ryzykiem. Przed podjęciem decyzji zapoznaj się z <a className="text-yellow-300 underline" href="https://alsolution.pl/produkty-1/token-alcoin" target="_blank">dokumentacją kontraktu</a>.
+          </footer>
+        </div>
       </div>
     </div>
   );
