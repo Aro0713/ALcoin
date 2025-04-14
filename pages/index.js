@@ -7,7 +7,6 @@ import contractJson from "../abi/ALcoin.json";
 import { motion } from "framer-motion";
 
 const abi = contractJson.abi;
-
 const CONTRACT_ADDRESS = "0x4Cda22D1B7B98626F65340a2817242d29eF9EF1F";
 const SECONDS_IN_YEAR = 365 * 24 * 3600;
 
@@ -209,10 +208,12 @@ export default function Home() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     connectWallet();
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchBalance();
     fetchCost();
@@ -221,45 +222,54 @@ export default function Home() {
   }, [contract, walletAddress, amount]);
 
   return (
-    <div>
-      {/* ...tu wstaw cały swój layout UI z zakupem, stakingiem itd. + na koniec: */}
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-yellow-100 to-yellow-300">
+      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6">
+        <h1 className="text-2xl font-bold mb-4">💎 ALcoin - Panel</h1>
+        <p className="mb-2">Twój adres: <span className="font-mono text-blue-700">{walletAddress || '(niepołączony)'}</span></p>
+        <p className="mb-4">Saldo ALcoin: <strong>{alcBalance}</strong> ALC</p>
 
-      {walletAddress === contractOwner && (
-        <div className="mt-6 border-t pt-6">
-          <h2 className="text-xl font-semibold mb-2">🎁 Wyślij ALcoin</h2>
+        {walletAddress === contractOwner && (
+          <div className="mt-6 border-t pt-6">
+            <h2 className="text-xl font-semibold mb-2">🎁 Wyślij ALcoin</h2>
 
-          <input
-            type="text"
-            placeholder="Adres odbiorcy"
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            className="w-full mb-2 p-2 border rounded"
-          />
+            <input
+              type="text"
+              placeholder="Adres odbiorcy"
+              value={recipient}
+              onChange={(e) => setRecipient(e.target.value)}
+              className="w-full mb-2 p-2 border rounded"
+            />
 
-          <input
-            type="number"
-            placeholder="Ilość ALC"
-            value={transferAmount}
-            onChange={(e) => setTransferAmount(e.target.value)}
-            className="w-full mb-2 p-2 border rounded"
-          />
+            <input
+              type="number"
+              placeholder="Ilość ALC"
+              value={transferAmount}
+              onChange={(e) => setTransferAmount(e.target.value)}
+              className="w-full mb-2 p-2 border rounded"
+            />
 
-          <button
-            onClick={transferTokens}
-            className="w-full bg-yellow-500 text-black font-bold py-2 rounded hover:bg-yellow-600"
-          >
-            Wyślij ALcoin
-          </button>
+            <button
+              onClick={transferTokens}
+              className="w-full bg-yellow-500 text-black font-bold py-2 rounded hover:bg-yellow-600"
+            >
+              Wyślij ALcoin
+            </button>
 
-          {transferMessage && <p className="mt-2 text-sm text-gray-800">{transferMessage}</p>}
+            {transferMessage && <p className="mt-2 text-sm text-gray-800">{transferMessage}</p>}
 
-          {recipientBalance && (
-            <p className="mt-2 text-sm text-green-700">
-              Saldo odbiorcy po transferze: <strong>{recipientBalance}</strong> ALC
-            </p>
-          )}
-        </div>
-      )}
+            {recipientBalance && (
+              <p className="mt-2 text-sm text-green-700">
+                Saldo odbiorcy po transferze: <strong>{recipientBalance}</strong> ALC
+              </p>
+            )}
+          </div>
+        )}
+
+        <footer className="mt-6 text-center text-xs text-gray-500">
+          © {new Date().getFullYear()} ALcoin – Wszelkie prawa zastrzeżone. <br />
+          Inwestycje w kryptowaluty wiążą się z ryzykiem. Przed podjęciem decyzji zapoznaj się z <a className="text-blue-600 underline" href="https://alsolution.pl/produkty-1/token-alcoin" target="_blank">dokumentacją kontraktu</a>.
+        </footer>
+      </div>
     </div>
   );
 }
