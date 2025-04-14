@@ -1,3 +1,6 @@
+// index.js
+'use client'
+
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import contractJson from "../abi/ALcoin.json";
@@ -22,6 +25,10 @@ export default function Home() {
   const [newInvestor, setNewInvestor] = useState("");
   const [adminMessage, setAdminMessage] = useState("");
   const [language, setLanguage] = useState("PL");
+  const [recipient, setRecipient] = useState("");
+  const [transferAmount, setTransferAmount] = useState("10000");
+  const [transferMessage, setTransferMessage] = useState("");
+  const [recipientBalance, setRecipientBalance] = useState("");
 
   const connectWallet = async () => {
     try {
@@ -183,6 +190,25 @@ export default function Home() {
     }
   };
 
+  const transferTokens = async () => {
+    if (!ethers.isAddress(recipient)) {
+      setTransferMessage("❌ Nieprawidłowy adres.");
+      return;
+    }
+    try {
+      const amount = ethers.parseUnits(transferAmount, 18);
+      const tx = await contract.transfer(recipient, amount);
+      await tx.wait();
+      setTransferMessage(`✅ Wysłano ${transferAmount} ALC do ${recipient}`);
+      setTransferAmount("10000");
+      const recBalance = await contract.balanceOf(recipient);
+      setRecipientBalance(ethers.formatUnits(recBalance, 18));
+    } catch (err) {
+      console.error("❌ Błąd transferu:", err);
+      setTransferMessage("❌ Błąd podczas wysyłania.");
+    }
+  };
+
   useEffect(() => {
     connectWallet();
   }, []);
@@ -195,184 +221,45 @@ export default function Home() {
   }, [contract, walletAddress, amount]);
 
   return (
-    <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: "url('/alcoin-bg.webp')" }}
-    >
-      <div className="min-h-screen backdrop-blur-md bg-black/60 flex flex-col items-center justify-between p-4">
-        <div className="w-full max-w-6xl bg-yellow-400/40 backdrop-blur-sm rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 text-black">
-          {/* LOGO */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1 }}
-            className="flex justify-center mb-6"
-          >
-            <img
-              src="/logo-alcoin.png"
-              alt="ALcoin Logo"
-              className="h-20 sm:h-24 md:h-[130px] w-auto drop-shadow-xl"
-            />
-          </motion.div>
-  
-          {/* SELECT JĘZYKA */}
-          <div className="flex justify-end mb-4">
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="p-2 rounded border text-black"
-            >
-              <option value="PL">PL</option>
-              <option value="EN">EN</option>
-              <option value="UA">UA</option>
-            </select>
-          </div>
-  
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Kolumna 1: Zakup + BuyBack */}
-            <motion.div
-              className="space-y-6"
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <section>
-                <p className="mb-4 text-base sm:text-lg font-extrabold tracking-wide uppercase text-center bg-gradient-to-r from-yellow-300 via-yellow-500 to-yellow-300 bg-clip-text text-transparent animate-pulse">
-                  Promocja: -15% od ceny ETH!
-                </p>
-                <p className="mb-2">
-                  Twój adres:{" "}
-                  <span className="font-mono text-blue-600">
-                    {walletAddress || "(niepołączony)"}
-                  </span>
-                </p>
-                <p className="mb-4">
-                  Saldo ALcoin: <strong>{alcBalance}</strong> ALC
-                </p>
-  
-                {!walletAddress && (
-                  <button
-                    onClick={connectWallet}
-                    className="mb-4 px-4 py-3 bg-yellow-500 text-black font-bold rounded-xl shadow hover:bg-yellow-600 hover:shadow-lg transition text-base sm:text-lg"
-                  >
-                    Połącz portfel
-                  </button>
-                )}
-  
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full mb-4 p-2 border rounded-xl text-right text-black"
-                />
-                <p className="mb-4">
-                  Koszt: <strong>{cost}</strong> ETH
-                </p>
-                <button
-                  onClick={buyTokens}
-                  className="w-full bg-yellow-500 text-black font-bold py-3 rounded-xl shadow hover:bg-yellow-600 hover:shadow-lg transition text-base sm:text-lg"
-                >
-                  Kup Tokeny
-                </button>
-              </section>
-  
-              <section>
-                <h2 className="text-xl font-semibold mb-2">🚀 BuyBack</h2>
-                <button
-                  onClick={buyBack}
-                  className="w-full bg-yellow-500 text-black font-bold py-3 rounded-xl shadow hover:bg-yellow-600 hover:shadow-lg transition text-base sm:text-lg"
-                >
-                  Sprzedaj tokeny do kontraktu
-                </button>
-              </section>
-            </motion.div>
-  
-            {/* Kolumna 2: Staking + Dywidendy + Admin */}
-            <motion.div
-              className="space-y-6"
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <section>
-                <h2 className="text-xl font-semibold mb-2">📦 Staking</h2>
-                <p>
-                  Aktualnie stakowane: <strong>{stakingBalance}</strong> ALC
-                </p>
-                <input
-                  type="number"
-                  value={stakingAmount}
-                  onChange={(e) => setStakingAmount(e.target.value)}
-                  className="w-full mb-2 p-2 border rounded-xl text-right text-black"
-                />
-                <button
-                  onClick={stake}
-                  className="w-full bg-yellow-500 text-black font-bold py-3 rounded-xl shadow hover:bg-yellow-600 hover:shadow-lg transition text-base sm:text-lg"
-                >
-                  Stake
-                </button>
-                <button
-                  onClick={unstake}
-                  className="w-full mt-2 bg-yellow-600 text-black font-bold py-3 rounded-xl shadow hover:bg-yellow-700 hover:shadow-lg transition text-base sm:text-lg"
-                >
-                  Unstake + Odbierz nagrody
-                </button>
-              </section>
-  
-              <section>
-                <h2 className="text-xl font-semibold mb-2">📈 Dywidendy</h2>
-                <p>Szacunkowa roczna dywidenda: {dividend} ALC</p>
-                <p>Dni do kolejnej wypłaty: {daysLeft}</p>
-                <button
-                  onClick={claimDividend}
-                  className="mt-2 bg-yellow-500 text-black font-bold px-4 py-3 rounded-xl shadow hover:bg-yellow-600 hover:shadow-lg transition text-base sm:text-lg"
-                >
-                  Wypłać Dywidendę
-                </button>
-              </section>
-  
-              {walletAddress === contractOwner && (
-                <section>
-                  <h2 className="text-xl font-semibold mb-2">🛡️ Panel Admina</h2>
-                  <input
-                    type="text"
-                    placeholder="Adres inwestora"
-                    value={newInvestor}
-                    onChange={(e) => setNewInvestor(e.target.value)}
-                    className="w-full mb-2 p-2 border rounded-xl text-black"
-                  />
-                  <button
-                    onClick={addToWhitelist}
-                    className="w-full bg-yellow-500 text-black font-bold py-3 rounded-xl shadow hover:bg-yellow-600 hover:shadow-lg transition text-base sm:text-lg"
-                  >
-                    Dodaj do whitelisty
-                  </button>
-                  {adminMessage && (
-                    <p className="mt-2 text-sm text-gray-800">{adminMessage}</p>
-                  )}
-                </section>
-              )}
-            </motion.div>
-          </div>
-        </div>
-  
-        {/* STOPKA */}
-        <footer className="mt-6 text-center text-xs text-gray-300">
-  © {new Date().getFullYear()} ALcoin – Wszelkie prawa zastrzeżone.  
-  Strona ma charakter informacyjny i nie stanowi oferty w rozumieniu przepisów Kodeksu Cywilnego.  
-  Inwestycje w kryptowaluty wiążą się z ryzykiem. Przed podjęciem decyzji zapoznaj się z  
-  <a
-    href="https://alsolution.pl/produkty-1/token-alcoin"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="text-yellow-300 underline ml-1"
-  >
-    dokumentacją kontraktu
-  </a>.
-</footer>
+    <div>
+      {/* ...tu wstaw cały swój layout UI z zakupem, stakingiem itd. + na koniec: */}
 
-      </div>
+      {walletAddress === contractOwner && (
+        <div className="mt-6 border-t pt-6">
+          <h2 className="text-xl font-semibold mb-2">🎁 Wyślij ALcoin</h2>
+
+          <input
+            type="text"
+            placeholder="Adres odbiorcy"
+            value={recipient}
+            onChange={(e) => setRecipient(e.target.value)}
+            className="w-full mb-2 p-2 border rounded"
+          />
+
+          <input
+            type="number"
+            placeholder="Ilość ALC"
+            value={transferAmount}
+            onChange={(e) => setTransferAmount(e.target.value)}
+            className="w-full mb-2 p-2 border rounded"
+          />
+
+          <button
+            onClick={transferTokens}
+            className="w-full bg-yellow-500 text-black font-bold py-2 rounded hover:bg-yellow-600"
+          >
+            Wyślij ALcoin
+          </button>
+
+          {transferMessage && <p className="mt-2 text-sm text-gray-800">{transferMessage}</p>}
+
+          {recipientBalance && (
+            <p className="mt-2 text-sm text-green-700">
+              Saldo odbiorcy po transferze: <strong>{recipientBalance}</strong> ALC
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
- 
 }
