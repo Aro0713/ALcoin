@@ -1,227 +1,231 @@
 // index.js – pełna wersja z layoutem, tłem, logo i wszystkimi funkcjami
 'use client'
 
-import { useState, useEffect } from "react";
-import { ethers } from "ethers";
-import contractJson from "../abi/ALcoin.json";
-import { motion } from "framer-motion";
+import { useState, useEffect } from 'react'
+import { ethers } from 'ethers'
+import contractJson from '../abi/ALcoin.json'
+import { motion } from 'framer-motion'
 
-const abi = contractJson.abi;
-const CONTRACT_ADDRESS = "0x4Cda22D1B7B98626F65340a2817242d29eF9EF1F";
-const SECONDS_IN_YEAR = 365 * 24 * 3600;
+const abi = contractJson.abi
+const CONTRACT_ADDRESS = '0x4Cda22D1B7B98626F65340a2817242d29eF9EF1F'
+const SECONDS_IN_YEAR = 365 * 24 * 3600
 
 export default function Home() {
-  const [walletAddress, setWalletAddress] = useState("");
-  const [alcBalance, setAlcBalance] = useState("0");
-  const [amount, setAmount] = useState("10000");
-  const [cost, setCost] = useState("0");
-  const [contract, setContract] = useState(null);
-  const [contractOwner, setContractOwner] = useState("");
-  const [dividend, setDividend] = useState("0");
-  const [daysLeft, setDaysLeft] = useState(null);
-  const [stakingAmount, setStakingAmount] = useState("10000");
-  const [stakingBalance, setStakingBalance] = useState("0");
-  const [newInvestor, setNewInvestor] = useState("");
-  const [adminMessage, setAdminMessage] = useState("");
-  const [language, setLanguage] = useState("PL");
-  const [recipient, setRecipient] = useState("");
-  const [transferAmount, setTransferAmount] = useState("10000");
-  const [transferMessage, setTransferMessage] = useState("");
-  const [recipientBalance, setRecipientBalance] = useState("");
-  const [basePriceETH, setBasePriceETH] = useState("0");
+  const [walletAddress, setWalletAddress] = useState('')
+  const [alcBalance, setAlcBalance] = useState('0')
+  const [amount, setAmount] = useState('10000')
+  const [cost, setCost] = useState('0')
+  const [contract, setContract] = useState(null)
+  const [contractOwner, setContractOwner] = useState('')
+  const [dividend, setDividend] = useState('0')
+  const [daysLeft, setDaysLeft] = useState(null)
+  const [stakingAmount, setStakingAmount] = useState('10000')
+  const [stakingBalance, setStakingBalance] = useState('0')
+  const [newInvestor, setNewInvestor] = useState('')
+  const [adminMessage, setAdminMessage] = useState('')
+  const [recipient, setRecipient] = useState('')
+  const [transferAmount, setTransferAmount] = useState('10000')
+  const [transferMessage, setTransferMessage] = useState('')
+  const [recipientBalance, setRecipientBalance] = useState('')
+  const [basePriceETH, setBasePriceETH] = useState('0')
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
+    }
+  }, [])
 
   const connectWallet = async () => {
-  try {
-    if (!window.ethereum) {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        window.location.href = "https://metamask.app.link/dapp/alcoin-platform.vercel.app";
-      } else {
-        alert("🦊 Zainstaluj MetaMask jako rozszerzenie przeglądarki.");
+    try {
+      if (!window.ethereum) {
+        if (isMobile) {
+          window.location.href = 'https://metamask.app.link/dapp/alcoin-platform.vercel.app'
+        } else {
+          alert('🦊 Zainstaluj MetaMask jako rozszerzenie przeglądarki.')
+        }
+        return
       }
-      return;
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      await provider.send('eth_requestAccounts', [])
+      const signer = await provider.getSigner()
+      const address = await signer.getAddress()
+      setWalletAddress(address)
+      const alcoinContract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer)
+      setContract(alcoinContract)
+      const owner = await alcoinContract.owner()
+      setContractOwner(owner)
+      const balance = await alcoinContract.balanceOf(address)
+      setAlcBalance(ethers.formatUnits(balance, 18))
+    } catch (err) {
+      console.error(err)
+      alert('Nie udało się połączyć z portfelem.')
     }
-
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
-    const signer = await provider.getSigner();
-    const address = await signer.getAddress();
-    setWalletAddress(address);
-    const alcoinContract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
-    setContract(alcoinContract);
-    const owner = await alcoinContract.owner();
-    setContractOwner(owner);
-    const balance = await alcoinContract.balanceOf(address);
-    setAlcBalance(ethers.formatUnits(balance, 18));
-  } catch (err) {
-    console.error(err);
-    alert("Nie udało się połączyć z portfelem.");
   }
-};
 
   const fetchBalance = async () => {
     if (contract && walletAddress) {
-      const balance = await contract.balanceOf(walletAddress);
-      setAlcBalance(ethers.formatUnits(balance, 18));
+      const balance = await contract.balanceOf(walletAddress)
+      setAlcBalance(ethers.formatUnits(balance, 18))
     }
-  };
+  }
 
   const fetchCost = async () => {
     if (contract && amount) {
       try {
-        const pricePerToken = await contract.getTokenPriceInETH();
-        const discountedPrice = (BigInt(pricePerToken) * 85n) / 100n;
-        const totalCost = (ethers.parseUnits(amount, 18) * discountedPrice) / ethers.parseUnits("1", 18);
-        setCost(ethers.formatEther(totalCost));
-        setBasePriceETH(ethers.formatEther(pricePerToken));
+        const pricePerToken = await contract.getTokenPriceInETH()
+        const discountedPrice = (BigInt(pricePerToken) * 85n) / 100n
+        const totalCost = (ethers.parseUnits(amount, 18) * discountedPrice) / ethers.parseUnits('1', 18)
+        setCost(ethers.formatEther(totalCost))
+        setBasePriceETH(ethers.formatEther(pricePerToken))
       } catch (err) {
-        console.error("❌ Błąd pobierania ceny:", err);
-        setCost("0");
+        console.error('❌ Błąd pobierania ceny:', err)
+        setCost('0')
       }
     }
-  };
+  }
 
   const buyTokens = async () => {
-    if (!walletAddress || !contract) return alert("Połącz portfel najpierw.");
+    if (!walletAddress || !contract) return alert('Połącz portfel najpierw.')
     try {
-      const amountBN = ethers.parseUnits(amount, 18);
-      const tokenPrice = await contract.getTokenPriceInETH();
-      const discountedPrice = tokenPrice * 85n / 100n;
-      const totalCost = (amountBN * discountedPrice) / ethers.parseUnits("1", 18);
-      const tx = await contract.buyTokens(amountBN, { value: totalCost });
-      await tx.wait();
-      alert("✅ Zakup zakończony sukcesem!");
-      setAmount("10000");
-      fetchBalance();
-      fetchCost();
+      const amountBN = ethers.parseUnits(amount, 18)
+      const tokenPrice = await contract.getTokenPriceInETH()
+      const discountedPrice = tokenPrice * 85n / 100n
+      const totalCost = (amountBN * discountedPrice) / ethers.parseUnits('1', 18)
+      const tx = await contract.buyTokens(amountBN, { value: totalCost })
+      await tx.wait()
+      alert('✅ Zakup zakończony sukcesem!')
+      setAmount('10000')
+      fetchBalance()
+      fetchCost()
     } catch (err) {
-      console.error("❌ Błąd podczas zakupu:", err);
-      alert("❌ Nie udało się kupić tokenów.");
+      console.error('❌ Błąd podczas zakupu:', err)
+      alert('❌ Nie udało się kupić tokenów.')
     }
-  };
+  }
+
+  const buyBack = async () => {
+    try {
+      const amountBN = ethers.parseUnits(amount, 18)
+      const tx = await contract.buyBackTokens(amountBN)
+      await tx.wait()
+      alert('✅ Tokeny odkupił kontrakt!')
+      fetchBalance()
+    } catch (err) {
+      console.error('❌ Błąd odkupu:', err)
+    }
+  }
 
   const fetchLastDistribution = async () => {
     if (contract) {
       try {
-        const last = await contract.lastDividendDistribution();
-        const lastTime = Number(last);
-        const now = Math.floor(Date.now() / 1000);
-        const interval = SECONDS_IN_YEAR;
-        const remaining = Math.max(interval - (now - lastTime), 0);
-        setDaysLeft(Math.ceil(remaining / (24 * 3600)));
-        const rawBalance = await contract.investorBalance(walletAddress);
-        const balance = ethers.formatUnits(rawBalance, 18);
-        const estimatedDividend = (parseFloat(balance) * 10) / 100;
-        setDividend(estimatedDividend.toFixed(2));
+        const last = await contract.lastDividendDistribution()
+        const now = Math.floor(Date.now() / 1000)
+        const remaining = Math.max(SECONDS_IN_YEAR - (now - Number(last)), 0)
+        setDaysLeft(Math.ceil(remaining / (24 * 3600)))
+
+        const rawBalance = await contract.investorBalance(walletAddress)
+        const balance = ethers.formatUnits(rawBalance, 18)
+        const estimatedDividend = (parseFloat(balance) * 10) / 100
+        setDividend(estimatedDividend.toFixed(2))
       } catch (err) {
-        console.error("Błąd dywidendy:", err);
+        console.error('Błąd dywidendy:', err)
       }
     }
-  };
+  }
 
   const claimDividend = async () => {
     try {
-      const tx = await contract.distributeDividends(0);
-      await tx.wait();
-      alert("✅ Dywidenda wypłacona!");
-      fetchBalance();
+      const tx = await contract.distributeDividends(0)
+      await tx.wait()
+      alert('✅ Dywidenda wypłacona!')
+      fetchBalance()
     } catch (err) {
-      console.error("❌ Błąd wypłaty dywidendy:", err);
+      console.error('❌ Błąd wypłaty dywidendy:', err)
     }
-  };
+  }
 
   const fetchStakingBalance = async () => {
     if (contract && walletAddress) {
-      const balance = await contract.stakingBalance(walletAddress);
-      setStakingBalance(ethers.formatUnits(balance, 18));
+      const balance = await contract.stakingBalance(walletAddress)
+      setStakingBalance(ethers.formatUnits(balance, 18))
     }
-  };
+  }
 
   const stake = async () => {
     try {
-      const amountBN = ethers.parseUnits(stakingAmount, 18);
-      const tx = await contract.stakeTokens(amountBN);
-      await tx.wait();
-      alert("✅ Staking zakończony!");
-      fetchStakingBalance();
+      const amountBN = ethers.parseUnits(stakingAmount, 18)
+      const tx = await contract.stakeTokens(amountBN)
+      await tx.wait()
+      alert('✅ Staking zakończony!')
+      fetchStakingBalance()
     } catch (err) {
-      console.error("❌ Błąd stakingu:", err);
+      console.error('❌ Błąd stakingu:', err)
     }
-  };
+  }
 
   const unstake = async () => {
     try {
-      const tx = await contract.unstakeTokens();
-      await tx.wait();
-      alert("✅ Unstaking zakończony!");
-      fetchStakingBalance();
+      const tx = await contract.unstakeTokens()
+      await tx.wait()
+      alert('✅ Unstaking zakończony!')
+      fetchStakingBalance()
     } catch (err) {
-      console.error("❌ Błąd unstakingu:", err);
+      console.error('❌ Błąd unstakingu:', err)
     }
-  };
+  }
 
   const addToWhitelist = async () => {
     if (!newInvestor || !ethers.isAddress(newInvestor)) {
-      setAdminMessage("❌ Nieprawidłowy adres.");
-      return;
+      setAdminMessage('❌ Nieprawidłowy adres.')
+      return
     }
     try {
-      const tx = await contract.addToWhitelist(newInvestor);
-      await tx.wait();
-      setAdminMessage(`✅ Dodano: ${newInvestor}`);
-      setNewInvestor("");
+      const tx = await contract.addToWhitelist(newInvestor)
+      await tx.wait()
+      setAdminMessage(`✅ Dodano: ${newInvestor}`)
+      setNewInvestor('')
     } catch (err) {
-      console.error("Błąd dodawania:", err);
-      setAdminMessage("❌ Błąd przy dodawaniu.");
+      console.error('Błąd dodawania:', err)
+      setAdminMessage('❌ Błąd przy dodawaniu.')
     }
-  };
-
-  const buyBack = async () => {
-    try {
-      const amountBN = ethers.parseUnits(amount, 18);
-      const tx = await contract.buyBackTokens(amountBN);
-      await tx.wait();
-      alert("✅ Tokeny odkupił kontrakt!");
-      fetchBalance();
-    } catch (err) {
-      console.error("❌ Błąd odkupu:", err);
-    }
-  };
+  }
 
   const transferTokens = async () => {
     if (!ethers.isAddress(recipient)) {
-      setTransferMessage("❌ Nieprawidłowy adres.");
-      return;
+      setTransferMessage('❌ Nieprawidłowy adres.')
+      return
     }
     try {
-      const amount = ethers.parseUnits(transferAmount, 18);
-      const tx = await contract.transfer(recipient, amount);
-      await tx.wait();
-      setTransferMessage(`✅ Wysłano ${transferAmount} ALC do ${recipient}`);
-      setTransferAmount("10000");
-      const recBalance = await contract.balanceOf(recipient);
-      setRecipientBalance(ethers.formatUnits(recBalance, 18));
+      const amount = ethers.parseUnits(transferAmount, 18)
+      const tx = await contract.transfer(recipient, amount)
+      await tx.wait()
+      setTransferMessage(`✅ Wysłano ${transferAmount} ALC do ${recipient}`)
+      setTransferAmount('10000')
+      const recBalance = await contract.balanceOf(recipient)
+      setRecipientBalance(ethers.formatUnits(recBalance, 18))
     } catch (err) {
-      console.error("❌ Błąd transferu:", err);
-      setTransferMessage("❌ Błąd podczas wysyłania.");
+      console.error('❌ Błąd transferu:', err)
+      setTransferMessage('❌ Błąd podczas wysyłania.')
     }
-  };
+  }
 
   useEffect(() => {
-    connectWallet();
-  }, []);
+    connectWallet()
+  }, [])
 
   useEffect(() => {
-    fetchBalance();
-    fetchCost();
-    fetchLastDistribution();
-    fetchStakingBalance();
-  }, [contract, walletAddress, amount]);
-
+    fetchBalance()
+    fetchCost()
+    fetchLastDistribution()
+    fetchStakingBalance()
+  }, [contract, walletAddress, amount])
   return (
     <div className="min-h-screen bg-cover bg-center bg-no-repeat text-white" style={{ backgroundImage: "url('/alcoin-bg.webp')" }}>
       <div className="min-h-screen backdrop-blur-md bg-black/60 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-6xl bg-white/10 rounded-xl shadow-xl p-6 text-white">
+
+          {/* Logo */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -235,24 +239,39 @@ export default function Home() {
             />
           </motion.div>
 
+          {/* Etherscan + Połącz portfel */}
+          <div className="mb-6 flex flex-col md:flex-row gap-4 items-center justify-center">
+            <button
+              onClick={() =>
+                window.open(
+                  "https://sepolia.etherscan.io/address/0x4Cda22D1B7B98626F65340a2817242d29eF9EF1F",
+                  "_blank"
+                )
+              }
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              🔗 Zobacz kontrakt na Etherscan
+            </button>
+
+            {!walletAddress && (
+              <button
+                onClick={connectWallet}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              >
+                🔑 Połącz portfel (MetaMask)
+              </button>
+            )}
+          </div>
+
           <div className="mb-4 text-sm">
             <p>Twój adres: <span className="font-mono text-blue-300">{walletAddress || '(niepołączony)'}</span></p>
             <p>Saldo: <strong>{alcBalance}</strong> ALC</p>
           </div>
 
-          <button
-  onClick={() => window.open("https://sepolia.etherscan.io/address/0x4Cda22D1B7B98626F65340a2817242d29eF9EF1F", "_blank")}
-  className="mb-6 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
->
-  🔗 Zobacz kontrakt na Etherscan
-</button>
-
-<div className="grid grid-cols-1 md:grid-cols-2 gap-6\">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">💰 Zakup Tokenów</h2>
-<p className="text-sm text-red-200">
-  Przed zakupem dodaj swój portfel do whitelisty – wyślij go przez formularz poniżej.
-</p>
+              <p className="text-sm text-red-200">Przed zakupem dodaj swój portfel do whitelisty – wyślij go przez formularz poniżej.</p>
               <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full p-2 border rounded text-black" />
               <p>Koszt: <strong>{cost}</strong> ETH</p>
               <p className="text-sm text-yellow-200">
@@ -299,45 +318,24 @@ export default function Home() {
             </div>
           </div>
 
+          <div className="mt-16 bg-white/10 p-6 rounded-xl shadow text-white w-full max-w-2xl mx-auto">
+            <h2 className="text-xl font-semibold mb-4">📬 Formularz kontaktowy inwestora</h2>
+            <form action="https://formsubmit.co/TWÓJ_EMAIL@domena.com" method="POST" className="space-y-4">
+              <input type="hidden" name="_captcha" value="false" />
+              <input type="text" name="wallet" required placeholder="Adres portfela (Ethereum)" className="w-full p-2 rounded border text-black" />
+              <input type="email" name="email" required placeholder="Adres e-mail lub telefon" className="w-full p-2 rounded border text-black" />
+              <textarea name="message" rows="4" placeholder="Dodatkowa wiadomość (opcjonalnie)" className="w-full p-2 rounded border text-black" />
+              <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Wyślij wiadomość</button>
+            </form>
+          </div>
+
           <footer className="mt-10 text-center text-xs text-white/80">
             © {new Date().getFullYear()} ALcoin – Wszelkie prawa zastrzeżone. <br />
             Inwestycje w kryptowaluty wiążą się z ryzykiem. Przed podjęciem decyzji zapoznaj się z <a className="text-yellow-300 underline" href="https://alsolution.pl/produkty-1/token-alcoin" target="_blank">dokumentacją kontraktu</a>.
-</footer>
+          </footer>
 
-<div className="mt-16 bg-white/10 p-6 rounded-xl shadow text-white w-full max-w-2xl mx-auto">
-  <h2 className="text-xl font-semibold mb-4">📬 Formularz kontaktowy inwestora</h2>
-  <form action="https://formsubmit.co/a4p.email@gmail.com" method="POST" className="space-y-4">
-    <input type="hidden" name="_captcha" value="false" />
-    <input
-      type="text"
-      name="wallet"
-      required
-      placeholder="Adres portfela (Ethereum)"
-      className="w-full p-2 rounded border text-black"
-    />
-    <input
-      type="email"
-      name="email"
-      required
-      placeholder="Adres e-mail lub telefon"
-      className="w-full p-2 rounded border text-black"
-    />
-    <textarea
-      name="message"
-      rows="4"
-      placeholder="Dodatkowa wiadomość (opcjonalnie)"
-      className="w-full p-2 rounded border text-black"
-    />
-    <button
-      type="submit"
-      className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-    >
-      Wyślij wiadomość
-    </button>
-  </form>
-</div>
         </div>
       </div>
     </div>
-  );
+  )
 }
