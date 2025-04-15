@@ -210,13 +210,9 @@ export default function Home() {
   }, [contract, walletAddress, amount]);
 
   return (
-    <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat text-white"
-      style={{ backgroundImage: "url('/alcoin-bg.webp')" }}
-    >
+    <div className="min-h-screen bg-cover bg-center bg-no-repeat text-white" style={{ backgroundImage: "url('/alcoin-bg.webp')" }}>
       <div className="min-h-screen backdrop-blur-md bg-black/60 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-6xl bg-white/10 rounded-xl shadow-xl p-6 text-white">
-  
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -229,169 +225,110 @@ export default function Home() {
               className="h-24 w-auto drop-shadow-xl"
             />
           </motion.div>
-  
-          <button
-            onClick={() =>
-              window.open(
-                "https://sepolia.etherscan.io/address/0x4Cda22D1B7B98626F65340a2817242d29eF9EF1F",
-                "_blank"
-              )
-            }
-            className="mb-6 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            🔗 Zobacz kontrakt na Etherscan
-          </button>
-  
+
           <div className="mb-4 text-sm">
-            <p>
-              Twój adres:{" "}
-              <span className="font-mono text-blue-300">
-                {walletAddress || "(niepołączony)"}
-              </span>
-            </p>
-            <p>
-              Saldo: <strong>{alcBalance}</strong> ALC
-            </p>
+            <p>Twój adres: <span className="font-mono text-blue-300">{walletAddress || '(niepołączony)'}</span></p>
+            <p>Saldo: <strong>{alcBalance}</strong> ALC</p>
           </div>
-  
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <button
+  onClick={() => window.open("https://sepolia.etherscan.io/address/0x4Cda22D1B7B98626F65340a2817242d29eF9EF1F", "_blank")}
+  className="mb-6 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+>
+  🔗 Zobacz kontrakt na Etherscan
+</button>
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6\">
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">💰 Zakup Tokenów</h2>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full p-2 border rounded text-black"
-              />
-              <p>
-                Koszt: <strong>{cost}</strong> ETH
-              </p>
+<p className="text-sm text-red-200">
+  Przed zakupem dodaj swój portfel do whitelisty – wyślij go przez formularz poniżej.
+</p>
+              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full p-2 border rounded text-black" />
+              <p>Koszt: <strong>{cost}</strong> ETH</p>
               <p className="text-sm text-yellow-200">
-                Cena emisyjna: 1 ALC = 0,28 USD
-                <br />
-                Wartość ALC w przedsprzedaży: 1 ALC = 0,238 USD
-                <br />
+                Cena emisyjna: 1 ALC = 0,28 USD<br />
+                Wartość ALC w przedsprzedaży: 1 ALC = 0,238 USD<br />
                 Wartość ALC w cenie emisyjnej = <strong>{basePriceETH}</strong> ETH
               </p>
-              <button
-                onClick={buyTokens}
-                className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
-              >
-                Kup Tokeny
-              </button>
-  
+              <button onClick={buyTokens} className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600">Kup Tokeny</button>
+
               <h2 className="text-xl font-semibold">🔥 BuyBack</h2>
-              <button
-                onClick={buyBack}
-                className="w-full bg-yellow-500 text-black py-2 rounded hover:bg-yellow-600"
-              >
-                Sprzedaj tokeny
-              </button>
+              <button onClick={buyBack} className="w-full bg-yellow-500 text-black py-2 rounded hover:bg-yellow-600">Sprzedaj tokeny</button>
             </div>
-  
+
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">📦 Staking</h2>
-              <input
-                type="number"
-                value={stakingAmount}
-                onChange={(e) => setStakingAmount(e.target.value)}
-                className="w-full p-2 border rounded text-black"
-              />
-              <button
-                onClick={stake}
-                className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
-              >
-                Stake
-              </button>
-              <button
-                onClick={unstake}
-                className="w-full bg-yellow-500 text-black py-2 rounded hover:bg-yellow-600"
-              >
-                Unstake
-              </button>
-  
+              <input type="number" value={stakingAmount} onChange={(e) => setStakingAmount(e.target.value)} className="w-full p-2 border rounded text-black" />
+              <button onClick={stake} className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600">Stake</button>
+              <button onClick={unstake} className="w-full bg-yellow-500 text-black py-2 rounded hover:bg-yellow-600">Unstake</button>
+
               <h2 className="text-xl font-semibold mt-6">📈 Dywidendy</h2>
               <p>Szacunkowa: {dividend} ALC</p>
               <p>Dni do wypłaty: {daysLeft}</p>
-              <button
-                onClick={claimDividend}
-                className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
-              >
-                Wypłać
-              </button>
-  
+              <button onClick={claimDividend} className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600">Wypłać</button>
+
               {walletAddress === contractOwner && (
                 <div className="pt-6 border-t mt-6">
                   <h2 className="text-xl font-semibold mb-2">🛡️ Panel Admina</h2>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <input
-                        type="text"
-                        placeholder="Adres inwestora"
-                        value={newInvestor}
-                        onChange={(e) => setNewInvestor(e.target.value)}
-                        className="w-full p-2 border rounded text-black"
-                      />
-                      <button
-                        onClick={addToWhitelist}
-                        className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 mt-2"
-                      >
-                        Dodaj do whitelisty
-                      </button>
-                      {adminMessage && (
-                        <p className="mt-1 text-sm text-white">{adminMessage}</p>
-                      )}
+                      <input type="text" placeholder="Adres inwestora" value={newInvestor} onChange={(e) => setNewInvestor(e.target.value)} className="w-full p-2 border rounded text-black" />
+                      <button onClick={addToWhitelist} className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 mt-2">Dodaj do whitelisty</button>
+                      {adminMessage && <p className="mt-1 text-sm text-white">{adminMessage}</p>}
                     </div>
                     <div>
-                      <input
-                        type="text"
-                        placeholder="Adres odbiorcy"
-                        value={recipient}
-                        onChange={(e) => setRecipient(e.target.value)}
-                        className="w-full p-2 border rounded text-black"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Ilość ALC"
-                        value={transferAmount}
-                        onChange={(e) => setTransferAmount(e.target.value)}
-                        className="w-full p-2 border rounded text-black mt-2"
-                      />
-                      <button
-                        onClick={transferTokens}
-                        className="w-full bg-yellow-500 text-black py-2 rounded hover:bg-yellow-600 mt-2"
-                      >
-                        Wyślij ALcoin
-                      </button>
-                      {transferMessage && (
-                        <p className="text-sm text-white mt-1">{transferMessage}</p>
-                      )}
-                      {recipientBalance && (
-                        <p className="text-sm text-green-300">
-                          Saldo odbiorcy: {recipientBalance} ALC
-                        </p>
-                      )}
+                      <input type="text" placeholder="Adres odbiorcy" value={recipient} onChange={(e) => setRecipient(e.target.value)} className="w-full p-2 border rounded text-black" />
+                      <input type="number" placeholder="Ilość ALC" value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} className="w-full p-2 border rounded text-black mt-2" />
+                      <button onClick={transferTokens} className="w-full bg-yellow-500 text-black py-2 rounded hover:bg-yellow-600 mt-2">Wyślij ALcoin</button>
+                      {transferMessage && <p className="text-sm text-white mt-1">{transferMessage}</p>}
+                      {recipientBalance && <p className="text-sm text-green-300">Saldo odbiorcy: {recipientBalance} ALC</p>}
                     </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
-  
+
           <footer className="mt-10 text-center text-xs text-white/80">
             © {new Date().getFullYear()} ALcoin – Wszelkie prawa zastrzeżone. <br />
-            Inwestycje w kryptowaluty wiążą się z ryzykiem. Przed podjęciem decyzji zapoznaj się z{' '}
-            <a
-              className="text-yellow-300 underline"
-              href="https://alsolution.pl/produkty-1/token-alcoin"
-              target="_blank"
-            >
-              dokumentacją kontraktu
-            </a>.
-          </footer>
+            Inwestycje w kryptowaluty wiążą się z ryzykiem. Przed podjęciem decyzji zapoznaj się z <a className="text-yellow-300 underline" href="https://alsolution.pl/produkty-1/token-alcoin" target="_blank">dokumentacją kontraktu</a>.
+</footer>
+
+<div className="mt-16 bg-white/10 p-6 rounded-xl shadow text-white w-full max-w-2xl mx-auto">
+  <h2 className="text-xl font-semibold mb-4">📬 Formularz kontaktowy inwestora</h2>
+  <form action="https://formsubmit.co/a4p.email@gmail.com" method="POST" className="space-y-4">
+    <input type="hidden" name="_captcha" value="false" />
+    <input
+      type="text"
+      name="wallet"
+      required
+      placeholder="Adres portfela (Ethereum)"
+      className="w-full p-2 rounded border text-black"
+    />
+    <input
+      type="email"
+      name="email"
+      required
+      placeholder="Adres e-mail lub telefon"
+      className="w-full p-2 rounded border text-black"
+    />
+    <textarea
+      name="message"
+      rows="4"
+      placeholder="Dodatkowa wiadomość (opcjonalnie)"
+      className="w-full p-2 rounded border text-black"
+    />
+    <button
+      type="submit"
+      className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+    >
+      Wyślij wiadomość
+    </button>
+  </form>
+</div>
         </div>
       </div>
     </div>
-  )
-  
+  );
 }
