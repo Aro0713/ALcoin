@@ -31,24 +31,33 @@ export default function Home() {
   const [basePriceETH, setBasePriceETH] = useState("0");
 
   const connectWallet = async () => {
-    try {
-      if (!window.ethereum) return alert("🦊 Zainstaluj MetaMask.");
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      const signer = await provider.getSigner();
-      const address = await signer.getAddress();
-      setWalletAddress(address);
-      const alcoinContract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
-      setContract(alcoinContract);
-      const owner = await alcoinContract.owner();
-      setContractOwner(owner);
-      const balance = await alcoinContract.balanceOf(address);
-      setAlcBalance(ethers.formatUnits(balance, 18));
-    } catch (err) {
-      console.error(err);
-      alert("Nie udało się połączyć z portfelem.");
+  try {
+    if (!window.ethereum) {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        window.location.href = "https://metamask.app.link/dapp/alcoin-platform.vercel.app";
+      } else {
+        alert("🦊 Zainstaluj MetaMask jako rozszerzenie przeglądarki.");
+      }
+      return;
     }
-  };
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const signer = await provider.getSigner();
+    const address = await signer.getAddress();
+    setWalletAddress(address);
+    const alcoinContract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+    setContract(alcoinContract);
+    const owner = await alcoinContract.owner();
+    setContractOwner(owner);
+    const balance = await alcoinContract.balanceOf(address);
+    setAlcBalance(ethers.formatUnits(balance, 18));
+  } catch (err) {
+    console.error(err);
+    alert("Nie udało się połączyć z portfelem.");
+  }
+};
 
   const fetchBalance = async () => {
     if (contract && walletAddress) {
