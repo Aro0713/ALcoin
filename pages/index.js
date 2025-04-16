@@ -39,29 +39,35 @@ export default function Home() {
   const connectWallet = async () => {
     try {
       if (!window.ethereum) {
-        if (isMobile) {
-          window.location.href = 'https://metamask.app.link/dapp/alcoin-platform.vercel.app'
-        } else {
-          alert('🦊 Zainstaluj MetaMask jako rozszerzenie przeglądarki.')
-        }
-        return
+        alert("🦊 MetaMask nie jest zainstalowany. Pobierz go z metamask.io");
+        return;
       }
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      await provider.send('eth_requestAccounts', [])
-      const signer = await provider.getSigner()
-      const address = await signer.getAddress()
-      setWalletAddress(address)
-      const alcoinContract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer)
-      setContract(alcoinContract)
-      const owner = await alcoinContract.owner()
-      setContractOwner(owner)
-      const balance = await alcoinContract.balanceOf(address)
-      setAlcBalance(ethers.formatUnits(balance, 18))
+  
+      console.log("✅ Próba połączenia z portfelem...");
+  
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+  
+      const signer = await provider.getSigner();
+      const address = await signer.getAddress();
+  
+      setWalletAddress(address);
+      const alcoinContract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+      setContract(alcoinContract);
+  
+      const owner = await alcoinContract.owner();
+      setContractOwner(owner);
+  
+      const balance = await alcoinContract.balanceOf(address);
+      setAlcBalance(ethers.formatUnits(balance, 18));
+  
+      console.log("✅ Połączono z:", address);
     } catch (err) {
-      console.error(err)
-      alert('Nie udało się połączyć z portfelem.')
+      console.error("❌ Błąd połączenia:", err);
+      alert(`❌ Nie udało się połączyć z portfelem.\n\n${err.message || err}`);
     }
-  }
+  };
+  
 
   const fetchBalance = async () => {
     if (contract && walletAddress) {
@@ -210,9 +216,9 @@ export default function Home() {
     }
   }
 
-  useEffect(() => {
-    connectWallet()
-  }, [])
+  // useEffect(() => {
+//   connectWallet();
+// }, []);
 
   useEffect(() => {
     fetchBalance()
@@ -254,13 +260,14 @@ export default function Home() {
             </button>
 
             {!walletAddress && (
-              <button
-                onClick={connectWallet}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-              >
-                🔑 Połącz portfel (MetaMask)
-              </button>
-            )}
+  <button
+    onClick={connectWallet}
+    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+  >
+    🔑 Połącz portfel (MetaMask)
+  </button>
+)}
+
           </div>
 
           <div className="mb-4 text-sm">
