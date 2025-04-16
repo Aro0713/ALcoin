@@ -1,4 +1,3 @@
-// index.js – pełna wersja z layoutem, tłem, logo i wszystkimi funkcjami
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -37,36 +36,49 @@ export default function Home() {
   }, [])
 
   const connectWallet = async () => {
-    try {
-      if (!window.ethereum) {
-        alert("🦊 MetaMask nie jest zainstalowany. Pobierz go z metamask.io");
-        return;
+  try {
+    if (!window.ethereum) {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        const goTo = confirm(
+          "Czy masz zainstalowaną aplikację MetaMask?\n\nKliknij OK, aby otworzyć aplikację MetaMask.\nKliknij Anuluj, aby przejść do sklepu z aplikacją."
+        );
+
+
+        if (goTo) {
+          window.location.href = "https://metamask.app.link/dapp/alcoin-platform.vercel.app";
+        } else {
+          window.location.href = "https://metamask.io/download.html";
+        }
+      } else {
+        alert("🦊 Zainstaluj MetaMask jako rozszerzenie przeglądarki.");
       }
-  
-      console.log("✅ Próba połączenia z portfelem...");
-  
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-  
-      const signer = await provider.getSigner();
-      const address = await signer.getAddress();
-  
-      setWalletAddress(address);
-      const alcoinContract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
-      setContract(alcoinContract);
-  
-      const owner = await alcoinContract.owner();
-      setContractOwner(owner);
-  
-      const balance = await alcoinContract.balanceOf(address);
-      setAlcBalance(ethers.formatUnits(balance, 18));
-  
-      console.log("✅ Połączono z:", address);
-    } catch (err) {
-      console.error("❌ Błąd połączenia:", err);
-      alert(`❌ Nie udało się połączyć z portfelem.\n\n${err.message || err}`);
+      return;
     }
-  };
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const signer = await provider.getSigner();
+    const address = await signer.getAddress();
+
+    setWalletAddress(address);
+
+    const alcoinContract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+    setContract(alcoinContract);
+
+    const owner = await alcoinContract.owner();
+    setContractOwner(owner);
+
+    const balance = await alcoinContract.balanceOf(address);
+    setAlcBalance(ethers.formatUnits(balance, 18));
+  } catch (err) {
+    console.error("❌ Błąd połączenia:", err);
+    alert(`❌ Nie udało się połączyć z portfelem.
+
+${err.message || err}`);
+  }
+}
+  
   
 
   const fetchBalance = async () => {
