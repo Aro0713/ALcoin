@@ -6,7 +6,8 @@ import contractJson from '../abi/ALcoin.json'
 import { motion } from 'framer-motion'
 
 const abi = contractJson.abi
-const CONTRACT_ADDRESS = '0x4Cda22D1B7B98626F65340a2817242d29eF9EF1F'
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS
+console.log("🦊 Using contract address:", CONTRACT_ADDRESS)
 const SECONDS_IN_YEAR = 365 * 24 * 3600
 
 export default function Home() {
@@ -36,6 +37,12 @@ export default function Home() {
   }, [])
 
   const connectWallet = async () => {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+await provider.send("eth_requestAccounts", []);
+const signer = await provider.getSigner();
+await provider.send("wallet_switchEthereumChain", [{ chainId: "0x38" }]);
+
+
   try {
     if (!window.ethereum) {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -57,6 +64,29 @@ export default function Home() {
     }
 
     const provider = new ethers.BrowserProvider(window.ethereum);
+    // wymuś BSC Mainnet (chainId = 0x38)
+const currentChain = await provider.send("eth_chainId", []);
+if (currentChain !== "0x38") {
+  try {
+    await provider.send("wallet_switchEthereumChain", [{ chainId: "0x38" }]);
+  } catch (switchError) {
+    if (switchError.code === 4902) {
+      // jeżeli BSC nie jest dodane, to je dodajemy
+      await provider.send("wallet_addEthereumChain", [{
+        chainId: "0x38",
+        chainName: "BNB Smart Chain Mainnet",
+        nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+        rpcUrls: ["https://bsc-dataseed.binance.org/"],
+        blockExplorerUrls: ["https://bscscan.com"]
+      }]);
+      // i ponów próbę przełączenia
+      await provider.send("wallet_switchEthereumChain", [{ chainId: "0x38" }]);
+    } else {
+      console.error("Nie udało się przełączyć sieci:", switchError);
+    }
+  }
+}
+
     await provider.send("eth_requestAccounts", []);
     const signer = await provider.getSigner();
     const address = await signer.getAddress();
@@ -239,47 +269,49 @@ ${err.message || err}`);
     fetchStakingBalance()
   }, [contract, walletAddress, amount])
   return (
-    <div className="min-h-screen bg-cover bg-center bg-no-repeat text-white" style={{ backgroundImage: "url('/alcoin-bg.webp')" }}>
-      <div className="min-h-screen backdrop-blur-md bg-black/60 flex flex-col items-center justify-center p-6">
-        <div className="w-full max-w-6xl bg-white/10 rounded-xl shadow-xl p-6 text-white">
+<div
+  className="min-h-screen bg-cover bg-center bg-no-repeat text-white"
+  style={{ backgroundImage: "url('/alcoin-bg.webp')" }}
+>
+  <div className="min-h-screen backdrop-blur-md bg-black/60 flex flex-col items-center justify-center p-6">
+    <div className="w-full max-w-6xl bg-white/10 rounded-xl shadow-xl p-6 text-white">
 
-          {/* Logo */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1 }}
-            className="flex justify-center mb-6"
+      {/* Logo */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1 }}
+        className="flex justify-center mb-6"
+      >
+        <img
+          src="/logo-alcoin.png"
+          alt="ALcoin Logo"
+          className="h-24 w-auto drop-shadow-xl"
+        />
+      </motion.div>
+
+      {/* BscScan + Połącz portfel */}
+      <div className="mb-6 flex flex-col md:flex-row gap-4 items-center justify-center">
+        <button
+          onClick={() =>
+            window.open(
+              `https://bscscan.com/address/${CONTRACT_ADDRESS}`,
+              "_blank"
+            )
+          }
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          🔗 Zobacz kontrakt na BscScan
+        </button>
+
+        {!walletAddress && (
+          <button
+            onClick={connectWallet}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
           >
-            <img
-              src="/logo-alcoin.png"
-              alt="ALcoin Logo"
-              className="h-24 w-auto drop-shadow-xl"
-            />
-          </motion.div>
-
-          {/* Etherscan + Połącz portfel */}
-          <div className="mb-6 flex flex-col md:flex-row gap-4 items-center justify-center">
-            <button
-              onClick={() =>
-                window.open(
-                  "https://sepolia.etherscan.io/address/0x4Cda22D1B7B98626F65340a2817242d29eF9EF1F",
-                  "_blank"
-                )
-              }
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            >
-              🔗 Zobacz kontrakt na Etherscan
-            </button>
-
-            {!walletAddress && (
-  <button
-    onClick={connectWallet}
-    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-  >
-    🔑 Połącz portfel (MetaMask)
-  </button>
-)}
-
+            🔑 Połącz portfel (MetaMask)
+          </button>
+        )}
           </div>
 
           <div className="mb-4 text-sm">
