@@ -24,12 +24,24 @@ export default function Home() {
   const [newInvestor, setNewInvestor] = useState('')
   const [adminMessage, setAdminMessage] = useState('')
   const [recipient, setRecipient] = useState('')
-  const [transferAmount, setTransferAmount] = useState('10000')
   const [transferMessage, setTransferMessage] = useState('')
   const [recipientBalance, setRecipientBalance] = useState('')
   const [basePriceETH, setBasePriceETH] = useState('0')
   const [isMobile, setIsMobile] = useState(false)
+  const [contractTransferAmount, setContractTransferAmount] = useState('10000')
 
+ const sendFromContract = async () => {
+   if (!contract) return alert('🔌 Brak połączenia z kontraktem!')
+   try {
+   const amountBN = ethers.parseUnits(contractTransferAmount, 18)
+   const tx = await contract.transferFromContract(amountBN)  // <-- dostosuj nazwę metody
+   await tx.wait()
+   alert('✅ Tokeny wysłane z kontraktu!')
+  } catch (err) {
+   console.error(err)
+   alert('❌ Błąd podczas wysyłania z kontraktu')
+   }
+ }
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
@@ -37,79 +49,65 @@ export default function Home() {
   }, [])
 
   const connectWallet = async () => {
-    const provider = new ethers.BrowserProvider(window.ethereum);
-await provider.send("eth_requestAccounts", []);
-const signer = await provider.getSigner();
-await provider.send("wallet_switchEthereumChain", [{ chainId: "0x38" }]);
-
-
-  try {
     if (!window.ethereum) {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
         const goTo = confirm(
           "Czy masz zainstalowaną aplikację MetaMask?\n\nKliknij OK, aby otworzyć aplikację MetaMask.\nKliknij Anuluj, aby przejść do sklepu z aplikacją."
-        );
-
-
+        )
         if (goTo) {
-          window.location.href = "https://metamask.app.link/dapp/alcoin-platform.vercel.app";
+          window.location.href = "https://metamask.app.link/dapp/alcoin-platform.vercel.app"
         } else {
-          window.location.href = "https://metamask.io/download.html";
+          window.location.href = "https://metamask.io/download.html"
         }
       } else {
-        alert("🦊 Zainstaluj MetaMask jako rozszerzenie przeglądarki.");
+        alert("🦊 Zainstaluj MetaMask jako rozszerzenie przeglądarki.")
       }
-      return;
+      return
     }
 
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    // wymuś BSC Mainnet (chainId = 0x38)
-const currentChain = await provider.send("eth_chainId", []);
-if (currentChain !== "0x38") {
-  try {
-    await provider.send("wallet_switchEthereumChain", [{ chainId: "0x38" }]);
-  } catch (switchError) {
-    if (switchError.code === 4902) {
-      // jeżeli BSC nie jest dodane, to je dodajemy
-      await provider.send("wallet_addEthereumChain", [{
-        chainId: "0x38",
-        chainName: "BNB Smart Chain Mainnet",
-        nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
-        rpcUrls: ["https://bsc-dataseed.binance.org/"],
-        blockExplorerUrls: ["https://bscscan.com"]
-      }]);
-      // i ponów próbę przełączenia
-      await provider.send("wallet_switchEthereumChain", [{ chainId: "0x38" }]);
-    } else {
-      console.error("Nie udało się przełączyć sieci:", switchError);
+    const provider = new ethers.BrowserProvider(window.ethereum)
+
+    // Wymuś BSC Mainnet (chainId = 0x38)
+    const chainId = await provider.send("eth_chainId", [])
+    if (chainId !== "0x38") {
+      try {
+        await provider.send("wallet_switchEthereumChain", [{ chainId: "0x38" }])
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          // Dodaj BSC jeśli nie ma
+          await provider.send("wallet_addEthereumChain", [{
+            chainId: "0x38",
+            chainName: "BNB Smart Chain Mainnet",
+            nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+            rpcUrls: ["https://bsc-dataseed.binance.org/"],
+            blockExplorerUrls: ["https://bscscan.com"]
+          }])
+          await provider.send("wallet_switchEthereumChain", [{ chainId: "0x38" }])
+        } else {
+          console.error("Nie udało się przełączyć sieci:", switchError)
+        }
+      }
+    }
+
+    try {
+      await provider.send("eth_requestAccounts", [])
+      const signer = await provider.getSigner()
+      const address = await signer.getAddress()
+      setWalletAddress(address)
+
+      const alcoinContract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer)
+      setContract(alcoinContract)
+
+      const owner = await alcoinContract.owner()
+      setContractOwner(owner)
+
+      const balance = await alcoinContract.balanceOf(address)
+      setAlcBalance(ethers.formatUnits(balance, 18))
+    } catch (err) {
+      console.error("❌ Błąd połączenia:", err)
+      alert(`❌ Nie udało się połączyć z portfelem.\n\n${err.message || err}`)
     }
   }
-}
-
-    await provider.send("eth_requestAccounts", []);
-    const signer = await provider.getSigner();
-    const address = await signer.getAddress();
-
-    setWalletAddress(address);
-
-    const alcoinContract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
-    setContract(alcoinContract);
-
-    const owner = await alcoinContract.owner();
-    setContractOwner(owner);
-
-    const balance = await alcoinContract.balanceOf(address);
-    setAlcBalance(ethers.formatUnits(balance, 18));
-  } catch (err) {
-    console.error("❌ Błąd połączenia:", err);
-    alert(`❌ Nie udało się połączyć z portfelem.
-
-${err.message || err}`);
-  }
-}
-  
-  
 
   const fetchBalance = async () => {
     if (contract && walletAddress) {
@@ -126,8 +124,7 @@ ${err.message || err}`);
         const totalCost = (ethers.parseUnits(amount, 18) * discountedPrice) / ethers.parseUnits('1', 18)
         setCost(ethers.formatEther(totalCost))
         setBasePriceETH(ethers.formatEther(pricePerToken))
-      } catch (err) {
-        console.error('❌ Błąd pobierania ceny:', err)
+      } catch {
         setCost('0')
       }
     }
@@ -137,17 +134,15 @@ ${err.message || err}`);
     if (!walletAddress || !contract) return alert('Połącz portfel najpierw.')
     try {
       const amountBN = ethers.parseUnits(amount, 18)
-      const tokenPrice = await contract.getTokenPriceInETH()
-      const discountedPrice = tokenPrice * 85n / 100n
+      const pricePerToken = await contract.getTokenPriceInETH()
+      const discountedPrice = (pricePerToken * 85n) / 100n
       const totalCost = (amountBN * discountedPrice) / ethers.parseUnits('1', 18)
       const tx = await contract.buyTokens(amountBN, { value: totalCost })
       await tx.wait()
       alert('✅ Zakup zakończony sukcesem!')
       setAmount('10000')
-      fetchBalance()
-      fetchCost()
-    } catch (err) {
-      console.error('❌ Błąd podczas zakupu:', err)
+      fetchBalance(); fetchCost()
+    } catch {
       alert('❌ Nie udało się kupić tokenów.')
     }
   }
@@ -159,9 +154,7 @@ ${err.message || err}`);
       await tx.wait()
       alert('✅ Tokeny odkupił kontrakt!')
       fetchBalance()
-    } catch (err) {
-      console.error('❌ Błąd odkupu:', err)
-    }
+    } catch { /*...*/ }
   }
 
   const fetchLastDistribution = async () => {
@@ -169,16 +162,12 @@ ${err.message || err}`);
       try {
         const last = await contract.lastDividendDistribution()
         const now = Math.floor(Date.now() / 1000)
-        const remaining = Math.max(SECONDS_IN_YEAR - (now - Number(last)), 0)
-        setDaysLeft(Math.ceil(remaining / (24 * 3600)))
-
-        const rawBalance = await contract.investorBalance(walletAddress)
-        const balance = ethers.formatUnits(rawBalance, 18)
-        const estimatedDividend = (parseFloat(balance) * 10) / 100
-        setDividend(estimatedDividend.toFixed(2))
-      } catch (err) {
-        console.error('Błąd dywidendy:', err)
-      }
+        const rem = Math.max(SECONDS_IN_YEAR - (now - Number(last)), 0)
+        setDaysLeft(Math.ceil(rem / (24 * 3600)))
+        const invBal = await contract.investorBalance(walletAddress)
+        const estimated = (parseFloat(ethers.formatUnits(invBal, 18)) * 10) / 100
+        setDividend(estimated.toFixed(2))
+      } catch { /*...*/ }
     }
   }
 
@@ -188,15 +177,13 @@ ${err.message || err}`);
       await tx.wait()
       alert('✅ Dywidenda wypłacona!')
       fetchBalance()
-    } catch (err) {
-      console.error('❌ Błąd wypłaty dywidendy:', err)
-    }
+    } catch { /*...*/ }
   }
 
   const fetchStakingBalance = async () => {
     if (contract && walletAddress) {
-      const balance = await contract.stakingBalance(walletAddress)
-      setStakingBalance(ethers.formatUnits(balance, 18))
+      const bal = await contract.stakingBalance(walletAddress)
+      setStakingBalance(ethers.formatUnits(bal, 18))
     }
   }
 
@@ -207,9 +194,7 @@ ${err.message || err}`);
       await tx.wait()
       alert('✅ Staking zakończony!')
       fetchStakingBalance()
-    } catch (err) {
-      console.error('❌ Błąd stakingu:', err)
-    }
+    } catch { /*...*/ }
   }
 
   const unstake = async () => {
@@ -218,13 +203,11 @@ ${err.message || err}`);
       await tx.wait()
       alert('✅ Unstaking zakończony!')
       fetchStakingBalance()
-    } catch (err) {
-      console.error('❌ Błąd unstakingu:', err)
-    }
+    } catch { /*...*/ }
   }
 
   const addToWhitelist = async () => {
-    if (!newInvestor || !ethers.isAddress(newInvestor)) {
+    if (!ethers.isAddress(newInvestor)) {
       setAdminMessage('❌ Nieprawidłowy adres.')
       return
     }
@@ -233,8 +216,7 @@ ${err.message || err}`);
       await tx.wait()
       setAdminMessage(`✅ Dodano: ${newInvestor}`)
       setNewInvestor('')
-    } catch (err) {
-      console.error('Błąd dodawania:', err)
+    } catch {
       setAdminMessage('❌ Błąd przy dodawaniu.')
     }
   }
@@ -245,22 +227,17 @@ ${err.message || err}`);
       return
     }
     try {
-      const amount = ethers.parseUnits(transferAmount, 18)
-      const tx = await contract.transfer(recipient, amount)
+      const amt = ethers.parseUnits(transferAmount, 18)
+      const tx = await contract.transfer(recipient, amt)
       await tx.wait()
       setTransferMessage(`✅ Wysłano ${transferAmount} ALC do ${recipient}`)
       setTransferAmount('10000')
-      const recBalance = await contract.balanceOf(recipient)
-      setRecipientBalance(ethers.formatUnits(recBalance, 18))
-    } catch (err) {
-      console.error('❌ Błąd transferu:', err)
+      const recBal = await contract.balanceOf(recipient)
+      setRecipientBalance(ethers.formatUnits(recBal, 18))
+    } catch {
       setTransferMessage('❌ Błąd podczas wysyłania.')
     }
   }
-
-  // useEffect(() => {
-//   connectWallet();
-// }, []);
 
   useEffect(() => {
     fetchBalance()
