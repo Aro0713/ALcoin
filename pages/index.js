@@ -47,6 +47,10 @@ export default function Home() {
       setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
     }
   }, [])
+  // ── przy załadowaniu strony od razu łączymy się z MetaMask
+  useEffect(() => {
+    connectWallet()
+  }, [])
 
   const connectWallet = async () => {
     if (!window.ethereum) {
@@ -324,7 +328,8 @@ export default function Home() {
               <p>Dni do wypłaty: {daysLeft}</p>
               <button onClick={claimDividend} className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600">Wypłać</button>
 
-              {walletAddress === contractOwner && (
+              {walletAddress?.toLowerCase() === contractOwner?.toLowerCase() && (
+
                 <div className="pt-6 border-t mt-6">
                   <h2 className="text-xl font-semibold mb-2">🛡️ Panel Admina</h2>
                   <div className="grid md:grid-cols-2 gap-4">
